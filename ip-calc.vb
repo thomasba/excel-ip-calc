@@ -1363,3 +1363,55 @@ Function Hex2Bin(ByVal strHex As String) As Double
     Next
     Hex2Bin = v
 End Function
+
+'----------------------------------------------
+' OWN CODE
+'----------------------------------------------
+
+'----------------------------------------------
+'   IpSetHostBits
+'----------------------------------------------
+' set to zero the bits in the host part of an address
+' example:
+'   IpSetHostBits("192.168.1.1/24") returns "192.168.1.255/24"
+'   IpSetHostBits("192.168.1.193 255.255.255.128") returns "192.168.1.255 255.255.255.128"
+Function IpSetHostBits(ByVal net As String) As String
+	IpSetHostBits = IpOr(net, IpInvertMask(IpMask(net)))
+End Function
+
+'----------------------------------------------
+'   IpNextSubnet
+'----------------------------------------------
+' returns the next subnet
+' example:
+'   IpSetHostBits("192.168.1.1/24") returns "192.168.1.255/24"
+'   IpSetHostBits("192.168.1.193 255.255.255.128") returns "192.168.1.255 255.255.255.128"
+Function IpNextSubnet(ByVal net As String) As String
+    Dim ip As String
+    ip = IpWithoutMask(net)
+    IpNextSubnet = IpAdd(IpAnd(ip, IpMask(net)), IpSubnetSize(net)) + Mid(net, Len(ip) + 1)
+End Function
+
+'----------------------------------------------
+'   IpGetSubnetNumber
+'----------------------------------------------
+' Gets the number of the subnet (reverse divide subnet)
+' 'subnet' the smaller subnet
+' 'n' difference between sub- and supernet, e.g. 8
+' example:
+'   IpGetSubnetNumber("1.2.3.0/26"; 2) returns "0"
+'   IpGetSubnetNumber("1.2.3.64/26"; 2) returns "1"
+Function IpGetSubnetNumber(ByVal subnet As String, n As Integer)
+    Dim ip As String
+    Dim supernet As String
+    Dim slen As Integer
+    Dim number As Integer
+    ip = IpAnd(IpWithoutMask(subnet), IpMask(subnet))
+    slen = IpSubnetLen(subnet)
+    supernet = IpAnd(IpWithoutMask(subnet), IpMask("/" + Str(slen - n)))
+    If (slen < 0) Then
+        IpGetSubnetNumber = "ERR subnet length < 0"
+        Exit Function
+    End If
+    IpGetSubnetNumber = (IpStrToBin(ip) - IpStrToBin(supernet)) / 2 ^ (32 - slen)
+End Function
